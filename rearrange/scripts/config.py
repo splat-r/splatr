@@ -128,3 +128,9 @@ actions = [
            'pickup_toilet_paper', 'pickup_tomato', 'pickup_towel', 'pickup_vase', 'pickup_watch', 'pickup_watering_can',
            'pickup_wine_bottle'
         ]
+
+_random_scene_ = True
+_scene_id_ = None
+
+# _random_scene_ = False
+# _scene_id_ = "FloorPlan429__test__49"

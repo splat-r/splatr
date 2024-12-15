@@ -5,9 +5,11 @@ import shutil
 import glob
 import numpy as np
 import torch.nn.functional
+import argparse
 from scipy.spatial import distance
 import cv2
 import copy
+import random
 
 import json
 import gzip
@@ -22,7 +24,7 @@ from baseline_configs.two_phase.two_phase_rgb_base import (
 )
 from rearrange.rearrange.tasks import RearrangeTaskSampler, WalkthroughTask, UnshuffleTask
 
-from rearrange.scripts.config import actions, GaussianConfig
+from rearrange.scripts.config import actions, GaussianConfig, _random_scene_, _scene_id_
 from rearrange.scripts.clip_feature_extractor import CLIPFeatureExtractor
 from rearrange.scripts.data import Data
 from rearrange.scripts.dense_feature_matching import Dinov2Matcher
@@ -55,47 +57,33 @@ two_phase_rgb_task_sampler: RearrangeTaskSampler = TwoPhaseRGBBaseExperimentConf
     epochs=1,
 )
 how_many_unique_datapoints = two_phase_rgb_task_sampler.total_unique
-num_tasks_to_do = 10
-
-print(
-    f"Sampling {num_tasks_to_do} tasks from the Two-Phase TRAINING dataset"
-    f" ({how_many_unique_datapoints} unique tasks) and taking random actions in them. "
-)
-
-# for _ in range(0):
-#     walkthrough_task = two_phase_rgb_task_sampler.next_task()
-#     walkthrough_task.step(action=0)
-#     unshuffle_task = two_phase_rgb_task_sampler.next_task()
-#     unshuffle_task.step(action=0)
+num_tasks_to_do = 1
 
 my_leaderboard_submission = {}
 for i_task in range(num_tasks_to_do):
     print(f"\nStarting task {i_task}")
 
-    # 1000, 800 -> test
-    for ere in range(3000):
-        walkthrough_task = two_phase_rgb_task_sampler.next_task()
-        if two_phase_rgb_task_sampler.current_task_spec.unique_id == "FloorPlan429__test__49":
-            break
-        else:
+    if _random_scene_:
+        scene_id_ = random.randint(1, how_many_unique_datapoints - 1)
+        for _ in range(scene_id_):
+            walkthrough_task = two_phase_rgb_task_sampler.next_task()
             walkthrough_task.step(action=0)
             unshuffle_task = two_phase_rgb_task_sampler.next_task()
             unshuffle_task.step(action=0)
+        walkthrough_task = two_phase_rgb_task_sampler.next_task()
 
-    # for _ in range(400):
-    #     walkthrough_task = two_phase_rgb_task_sampler.next_task()
-    #     walkthrough_task.step(action=0)
-    #     unshuffle_task = two_phase_rgb_task_sampler.next_task()
-    #     unshuffle_task.step(action=0)
-
-
-
-
-    # # TODO: uncomment below
-    # walkthrough_task = two_phase_rgb_task_sampler.next_task()
-
-
-
+    else:
+        if _scene_id_ is not None:
+            for ere in range(how_many_unique_datapoints - 1):
+                walkthrough_task = two_phase_rgb_task_sampler.next_task()
+                if two_phase_rgb_task_sampler.current_task_spec.unique_id == f"{_scene_id_}":
+                    break
+                else:
+                    walkthrough_task.step(action=0)
+                    unshuffle_task = two_phase_rgb_task_sampler.next_task()
+                    unshuffle_task.step(action=0)
+        else:
+            raise ValueError("scene id not set in the config file")
 
 
     print("--------------------------------------------------------------------------------")
@@ -159,6 +147,7 @@ for i_task in range(num_tasks_to_do):
         while not (walkthrough_task.is_done() or time_walk_over):
             if timestep > 990:
                 time_walk_over = True
+                walkthrough_task.step(action=0)
                 break
             if timestep == 0:
                 obs_agent = walkthrough_task.walkthrough_env.get_agent_location()
@@ -318,6 +307,7 @@ for i_task in range(num_tasks_to_do):
     while not (unshuffle_task.is_done() or time_over):
         if timestep > 1450:
             time_over = True
+            unshuffle_task.step(action=0)
             break
         if timestep == 0:
             obs_agent = unshuffle_task.unshuffle_env.get_agent_location()
@@ -416,15 +406,16 @@ for i_task in range(num_tasks_to_do):
             # and perform rearrangement
             del matcher
             del dense_feature_matcher
-            agent.reinit_clip_cpu()
+            #agent.reinit_clip_cpu()
             rearrange_dict, open_list, open_list_rend = agent.postprocess_detections(sam_predictor)
             torch.cuda.empty_cache()
 
             placed_loc = []
 
             for rend_idx in rearrange_dict:
-                if timestep > 1400:
+                if timestep > 1450:
                     time_over = True
+                    unshuffle_task.step(action=0)
                     break
                 if True:
                     sim_idx = rearrange_dict[rend_idx]
@@ -432,8 +423,9 @@ for i_task in range(num_tasks_to_do):
                     false_pick = False
                     # Iterate through a pair of pick and place indices
                     for i_ in range(2):
-                        if timestep > 1400:
+                        if timestep > 1450:
                             time_over = True
+                            unshuffle_task.step(action=0)
                             break
                         agent.navigation.explorer.reinit_act_queue()
                         reached = False
@@ -444,9 +436,10 @@ for i_task in range(num_tasks_to_do):
 
                         skip_place = False
                         while not reached:
-                            if timestep > 1400:
+                            if timestep > 1450:
                                 time_over = True
                                 reached = True
+                                unshuffle_task.step(action=0)
                                 break
                             if i_ == 0 and once:
                                 # Retrieving the center (world frame) of the misplaced object or
@@ -672,6 +665,7 @@ for i_task in range(num_tasks_to_do):
                             if timestep > 1400:
                                 time_over = True
                                 reoriented = True
+                                unshuffle_task.step(action=0)
                                 break
                             print("reorienting head")
                             if i_ == 0:
@@ -718,6 +712,7 @@ for i_task in range(num_tasks_to_do):
                             if timestep > 1400:
                                 time_over = True
                                 reached = True
+                                unshuffle_task.step(action=0)
                                 break
                             center = agent.objects_sim[sim_idx].center_accurate
                             agent.navigation.explorer.place_loc_rend = True
@@ -785,6 +780,7 @@ for i_task in range(num_tasks_to_do):
                             if timestep > 1400:
                                 time_over = True
                                 reoriented = True
+                                unshuffle_task.step(action=0)
                                 break
                             print("reorienting head after replace")
                             agent.navigation.explorer.reorient_head_flag_fn(pick_flag=False)
@@ -811,6 +807,7 @@ for i_task in range(num_tasks_to_do):
             for i_open in range(2):
                 if timestep > 1400:
                     time_over = True
+                    unshuffle_task.step(action=0)
                     break
                 if i_open == 0:
                     open_list_ = open_list
@@ -819,6 +816,7 @@ for i_task in range(num_tasks_to_do):
                 for open_idx in open_list_:
                     if timestep > 1400:
                         time_over = True
+                        unshuffle_task.step(action=0)
                         break
 
                     agent.navigation.explorer.reinit_act_queue()
@@ -836,6 +834,7 @@ for i_task in range(num_tasks_to_do):
                         if timestep > 1400:
                             time_over = True
                             reached = True
+                            unshuffle_task.step(action=0)
                             break
 
                         action, param = agent.navigation.act(point_goal=True,
@@ -919,6 +918,7 @@ for i_task in range(num_tasks_to_do):
                         if timestep > 1400:
                             time_over = True
                             completed = True
+                            unshuffle_task.step(action=0)
                             break
                         # Getting a better mask
 
@@ -1026,7 +1026,6 @@ for i_task in range(num_tasks_to_do):
             unshuffle_task.step(action=0)
 
     if time_over:
-        unshuffle_task.step(action=0)
         print("time over time over")
 
     del sam_predictor
