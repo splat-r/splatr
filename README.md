@@ -29,7 +29,6 @@ Clone the following repositories
 git clone https://github.com/splat-r/splatr/
 cd splatr
 git clone https://github.com/facebookresearch/dinov2.git
-cd ..
 ```
 
 SplatR was benchmarked for Python 3.9, Cuda 11.8, Torch 2.0.1. The requirements.txt file contains the dependencies for Dinov2 as well, so there's no need to install it from source.
@@ -68,6 +67,7 @@ We use the following open-source code in our work
   - [3D Gaussian Splating](https://github.com/graphdeco-inria/gaussian-splatting)
   - [LangSplat](https://github.com/minghanqin/LangSplat)
 - Rearrangement task
+  - [ai2thor-rearrangement](https://github.com/allenai/ai2thor-rearrangement) 
   - [TIDEE](https://github.com/Gabesarch/TIDEE/)
 
 
