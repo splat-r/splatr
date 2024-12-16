@@ -43,6 +43,9 @@ conda install pytorch3d==0.7.4 -c pytorch3d
 pip install -r requirements.txt
 ```
 
+
+Download SAM checkpoint [ViT-H](https://github.com/facebookresearch/segment-anything?tab=readme-ov-file) and add it to `ckpt\`. To use a different model type, change the model type and path in `\rearrange\scripts\config.py`.
+
 ## Rearrange task
 To run the rearrange task for a random scene, set `_random_scene_ = True` in `\rearrange\scripts\config.py` and to run it for a specific scene, set `_random_scene_ = False` and `_scene_id_=<unique_id_of_the_scene>`.
 
