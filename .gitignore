@@ -2,7 +2,7 @@
 *.pth
 output*
 runs*
-dataset*
+dataset/
 test*
 *.slurm
 *.pyc
