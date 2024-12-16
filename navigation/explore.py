@@ -163,8 +163,7 @@ class Explore():
         self.DT = obs.DT
         self.STEP_SIZE = obs.STEP_SIZE
         self.HORIZON_DT = obs.HORIZON_DT
-        self.head_tilt = obs.head_tilt_init 
-        print(self.STEP_SIZE)
+        self.head_tilt = obs.head_tilt_init
 
         self.keep_head_down = keep_head_down
         self.keep_head_straight = keep_head_straight
@@ -260,7 +259,6 @@ class Explore():
         self.action_failed = False
 
         self.z_bins = z #[0.15, 2.3] # 1.57 is roughly camera height
-        print("ZBINS", self.z_bins)
 
         self.agent_stuck = False
         self.alternate_stuck_action = False
@@ -913,7 +911,6 @@ class Explore():
 
                 # if not self.rearr_mode:
                 prev_len = len(self.obstructed_actions)
-                print("prev len : ", prev_len)
                 if prev_len>4000:
                     pass
                 else:
@@ -1106,7 +1103,6 @@ class Explore():
         self.dist_agent += dist
         self.delta_steps += 1
         if self.delta_steps == 20:
-            print("dist : ", dist)
             if self.dist_agent == 0:
                 self.agent_stuck = True
                 for i in range(4):
@@ -1973,7 +1969,6 @@ class Explore():
                 return
 
         # random resampling
-        print("count : ", self.step_count)
         if self.step_count % 100 == 0:
             print("resampling")
             del self.execution
